@@ -1,0 +1,750 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>麦克斯坦 - WebGL Product Demo</title>
+  <style>
+    :root {
+      --paper: #030504;
+      --ink: #e8ebe5;
+      --green: #56ff8b;
+      --muted: rgba(232, 235, 229, .46);
+      --veil: rgba(3, 5, 4, .74);
+      --line: rgba(86, 255, 139, .24);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", sans-serif;
+      letter-spacing: 0;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .07;
+      background-image:
+        radial-gradient(circle at 50% 46%, rgba(86, 255, 139, .06), transparent 35%),
+        linear-gradient(rgba(86, 255, 139, .20) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(86, 255, 139, .12) 1px, transparent 1px);
+      background-size: 82px 82px;
+      mix-blend-mode: screen;
+    }
+
+    #stage {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      cursor: none;
+    }
+
+    .chrome {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .brand {
+      position: absolute;
+      font-size: clamp(13px, 1vw, 16px);
+      line-height: 1;
+      font-weight: 400;
+      color: var(--ink);
+      text-transform: uppercase;
+    }
+
+    .brand {
+      top: 7.4vh;
+      left: 3.4vw;
+      color: var(--green);
+      text-shadow: 0 0 18px rgba(86, 255, 139, .26);
+    }
+
+    .title-wrap {
+      position: absolute;
+      left: 60vw;
+      top: 43vh;
+      transform: translate3d(var(--tx, 0), var(--ty, 0), 0);
+      transition: opacity .35s ease;
+      will-change: transform;
+    }
+
+    #activeTitle {
+      margin: 0;
+      font-family: "Helvetica Neue", Helvetica, sans-serif;
+      font-size: clamp(56px, 7.2vw, 148px);
+      line-height: .88;
+      font-weight: 200;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      white-space: nowrap;
+      color: rgba(232, 235, 229, .92);
+    }
+
+    .hint {
+      position: absolute;
+      left: 3.4vw;
+      bottom: 5.7vh;
+      max-width: 230px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      text-transform: uppercase;
+    }
+
+    .cursor {
+      position: fixed;
+      z-index: 6;
+      left: 0;
+      top: 0;
+      width: 22px;
+      height: 22px;
+      border: 1px solid rgba(86, 255, 139, .68);
+      border-radius: 50%;
+      pointer-events: none;
+      transform: translate3d(-50%, -50%, 0);
+      mix-blend-mode: difference;
+      opacity: .72;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      display: grid;
+      grid-template-columns: minmax(320px, 44vw) minmax(360px, 46vw);
+      justify-content: space-between;
+      align-items: center;
+      gap: 5vw;
+      padding: 7vh 5vw;
+      background: rgba(3, 5, 4, .86);
+      backdrop-filter: blur(26px);
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(.985);
+      transition: opacity .38s ease, transform .38s ease;
+    }
+
+    .overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1);
+    }
+
+    .modal-image {
+      align-self: center;
+      justify-self: start;
+      width: min(30vw, 440px);
+      height: min(60vh, 620px);
+      aspect-ratio: 0.72;
+      border: 1px solid rgba(86, 255, 139, .16);
+      background: rgba(255, 255, 255, .08);
+      object-fit: cover;
+      filter: grayscale(.08) contrast(.95);
+      box-shadow: 0 0 60px rgba(86, 255, 139, .05);
+    }
+
+    .modal-copy {
+      position: relative;
+      z-index: 2;
+      align-self: center;
+      justify-self: start;
+      width: min(42vw, 720px);
+      padding: 2vh 0 0;
+    }
+
+    .modal-copy h2 {
+      margin: 0 0 28px;
+      font-size: clamp(54px, 7.4vw, 142px);
+      line-height: .92;
+      font-weight: 200;
+      text-transform: uppercase;
+      color: rgba(232, 235, 229, .94);
+    }
+
+    .modal-copy p {
+      max-width: 610px;
+      margin: 0;
+      color: rgba(232, 235, 229, .74);
+      font-size: clamp(18px, 1.55vw, 27px);
+      line-height: 1.55;
+    }
+
+    .close {
+      position: absolute;
+      top: 5vh;
+      right: 4vw;
+      width: 42px;
+      height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      background: rgba(0, 0, 0, .35);
+      color: var(--ink);
+      font-size: 24px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    @media (max-width: 760px) {
+      .brand {
+        top: 28px;
+      }
+
+      .brand {
+        left: 22px;
+      }
+
+      .title-wrap {
+        left: 24px;
+        top: 45vh;
+      }
+
+      .hint {
+        display: none;
+      }
+
+      .overlay {
+        grid-template-columns: 1fr;
+        gap: 26px;
+        padding: 82px 22px 32px;
+      }
+
+      .modal-image {
+        justify-self: center;
+        width: min(58vw, 290px);
+        height: min(38vh, 410px);
+      }
+
+      .modal-copy {
+        width: 100%;
+        padding: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="stage" aria-label="Product portfolio WebGL stage"></canvas>
+
+  <div class="chrome" aria-hidden="false">
+    <div class="brand">麦克斯坦</div>
+    <div class="title-wrap" id="titleWrap">
+      <h1 id="activeTitle">AgentOS</h1>
+    </div>
+    <div class="hint">Move through the field. Click an image to open the product.</div>
+  </div>
+
+  <div class="cursor" id="cursor"></div>
+
+  <section class="overlay" id="overlay" aria-modal="true" aria-hidden="true">
+    <button class="close" id="closeOverlay" type="button" aria-label="Close product">×</button>
+    <img class="modal-image" id="modalImage" alt="">
+    <div class="modal-copy">
+      <h2 id="modalTitle"></h2>
+      <p id="modalDescription"></p>
+    </div>
+  </section>
+
+  <script>
+    const products = [
+      {
+        title: 'AgentOS',
+        description: '面向团队的 AI 工作流操作系统，用来把重复任务、审批流程和团队知识组织成可持续运行的智能工作台。',
+        hoverSummary: '把团队流程整理成可执行的 AI 工作台。',
+        rect: [-0.475, 0.527, 0.155, 0.331],
+        start: [-0.055, 0.10],
+        depth: 0.78,
+        accent: '#9fb3b6'
+      },
+      {
+        title: 'VisionDesk',
+        description: '用于视觉素材审核的多模态工作台，可以理解图片内容、辅助标注，并帮助团队更快发现视觉质量问题。',
+        hoverSummary: '多模态视觉审核与素材质量辅助工具。',
+        rect: [0.023, 0.602, 0.125, 0.295],
+        start: [0.00, 0.13],
+        depth: 1.08,
+        accent: '#8b9188'
+      },
+      {
+        title: 'PromptLab',
+        description: '面向 AI 团队的提示词管理平台，用于沉淀提示词、追踪版本，并让团队协作优化模型输出。',
+        hoverSummary: '沉淀、版本管理和协作优化提示词。',
+        rect: [0.460, 0.230, 0.118, 0.401],
+        start: [0.075, 0.045],
+        depth: 0.68,
+        accent: '#a39d91'
+      },
+      {
+        title: 'DataPilot',
+        description: '自然语言数据分析助手，让用户用提问的方式理解数据，并把复杂数据转化成清晰的图表和洞察。',
+        hoverSummary: '用自然语言提问，快速读懂数据。',
+        rect: [-0.531, -0.401, 0.139, 0.385],
+        start: [-0.085, -0.075],
+        depth: 1.28,
+        accent: '#c5c9c5'
+      },
+      {
+        title: 'MeetingMind',
+        description: 'AI 会议记忆与行动项 Agent，可以整理会议内容、提取后续任务，并帮助团队保持上下文连续。',
+        hoverSummary: '记录会议上下文，并自动整理行动项。',
+        rect: [-0.004, -0.571, 0.140, 0.285],
+        start: [0.00, -0.11],
+        depth: 0.92,
+        accent: '#6f7d76'
+      },
+      {
+        title: 'CreatorCopilot',
+        description: '面向内容创作者的 AI 内容规划助手，用于组织选题、规划内容节奏，并保持长期表达的一致性。',
+        hoverSummary: '帮助创作者规划选题和内容节奏。',
+        rect: [0.461, -0.587, 0.112, 0.296],
+        start: [0.08, -0.11],
+        depth: 0.58,
+        accent: '#c9d4ce'
+      }
+    ];
+
+    const canvas = document.getElementById('stage');
+    const gl = canvas.getContext('webgl', { antialias: true, alpha: true });
+    const activeTitle = document.getElementById('activeTitle');
+    const titleWrap = document.getElementById('titleWrap');
+    const cursor = document.getElementById('cursor');
+    const overlay = document.getElementById('overlay');
+    const modalImage = document.getElementById('modalImage');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalDescription = document.getElementById('modalDescription');
+    const closeOverlay = document.getElementById('closeOverlay');
+
+    if (!gl) {
+      document.body.innerHTML = '<p style="padding:32px">This demo needs WebGL.</p>';
+      throw new Error('WebGL unavailable');
+    }
+
+    const vertexSource = `
+      attribute vec2 a_position;
+      attribute vec2 a_uv;
+      uniform vec4 u_rect;
+      uniform vec2 u_parallax;
+      uniform float u_scale;
+      varying vec2 v_uv;
+
+      void main() {
+        vec2 centered = a_position * u_scale;
+        vec2 position = u_rect.xy + centered * u_rect.zw + u_parallax;
+        gl_Position = vec4(position, 0.0, 1.0);
+        v_uv = a_uv;
+      }
+    `;
+
+    const fragmentSource = `
+      precision mediump float;
+
+      uniform sampler2D u_texture;
+      uniform vec3 u_accent;
+      uniform vec2 u_mouseUv;
+      uniform float u_hover;
+      uniform float u_velocity;
+      uniform float u_time;
+      uniform float u_intro;
+      varying vec2 v_uv;
+
+      float softCircle(vec2 p, float radius, float blur) {
+        float d = length(p);
+        return 1.0 - smoothstep(radius, radius + blur, d);
+      }
+
+      void main() {
+        vec2 uv = v_uv;
+        vec2 pointer = uv - u_mouseUv;
+        float field = softCircle(pointer, 0.28, 0.36) * u_hover;
+        float wave = sin((pointer.x + pointer.y) * 26.0 + u_time * 2.4) * 0.004;
+        vec2 bend = normalize(pointer + 0.0001) * field * (0.038 + u_velocity * 0.018);
+        vec2 swirl = vec2(-pointer.y, pointer.x) * field * (0.026 + u_velocity * 0.010);
+        vec2 distorted = uv - bend + swirl + wave;
+        float split = field * (0.018 + u_velocity * 0.030);
+
+        float r = texture2D(u_texture, distorted + vec2(split, -split * 0.35)).r;
+        float g = texture2D(u_texture, distorted + vec2(-split * 0.28, split * 0.18)).g;
+        float b = texture2D(u_texture, distorted - vec2(split * 0.65, -split * 0.42)).b;
+        vec3 imageColor = vec3(r, g, b);
+
+        vec3 base = texture2D(u_texture, uv).rgb;
+        imageColor = mix(base, imageColor, field);
+        imageColor = mix(vec3(dot(imageColor, vec3(0.299, 0.587, 0.114))), imageColor, 0.62 + 0.38 * u_hover);
+        imageColor = mix(vec3(0.82), imageColor, 0.86 + 0.14 * u_hover);
+
+        float accentGray = dot(u_accent, vec3(0.299, 0.587, 0.114));
+        vec3 saturatedAccent = mix(vec3(accentGray), u_accent, 1.85);
+        vec3 solidColor = clamp(saturatedAccent * 1.18 + vec3(0.035), 0.0, 1.0);
+        vec3 color = mix(solidColor, imageColor, smoothstep(0.0, 1.0, u_hover));
+
+        float edge = smoothstep(0.0, 0.02, uv.x) * smoothstep(0.0, 0.02, uv.y) *
+          smoothstep(0.0, 0.02, 1.0 - uv.x) * smoothstep(0.0, 0.02, 1.0 - uv.y);
+        float alpha = edge * mix(0.82, 0.92, u_hover) * u_intro;
+        gl_FragColor = vec4(color, alpha);
+      }
+    `;
+
+    const createShader = (type, source) => {
+      const shader = gl.createShader(type);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        throw new Error(gl.getShaderInfoLog(shader));
+      }
+      return shader;
+    };
+
+    const program = gl.createProgram();
+    gl.attachShader(program, createShader(gl.VERTEX_SHADER, vertexSource));
+    gl.attachShader(program, createShader(gl.FRAGMENT_SHADER, fragmentSource));
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      throw new Error(gl.getProgramInfoLog(program));
+    }
+    gl.useProgram(program);
+
+    const quad = new Float32Array([
+      -1, -1, 0, 1,
+       1, -1, 1, 1,
+      -1,  1, 0, 0,
+      -1,  1, 0, 0,
+       1, -1, 1, 1,
+       1,  1, 1, 0
+    ]);
+
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, quad, gl.STATIC_DRAW);
+
+    const aPosition = gl.getAttribLocation(program, 'a_position');
+    const aUv = gl.getAttribLocation(program, 'a_uv');
+    gl.enableVertexAttribArray(aPosition);
+    gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 16, 0);
+    gl.enableVertexAttribArray(aUv);
+    gl.vertexAttribPointer(aUv, 2, gl.FLOAT, false, 16, 8);
+
+    const uniforms = {
+      rect: gl.getUniformLocation(program, 'u_rect'),
+      parallax: gl.getUniformLocation(program, 'u_parallax'),
+      scale: gl.getUniformLocation(program, 'u_scale'),
+      accent: gl.getUniformLocation(program, 'u_accent'),
+      mouseUv: gl.getUniformLocation(program, 'u_mouseUv'),
+      hover: gl.getUniformLocation(program, 'u_hover'),
+      velocity: gl.getUniformLocation(program, 'u_velocity'),
+      time: gl.getUniformLocation(program, 'u_time'),
+      intro: gl.getUniformLocation(program, 'u_intro'),
+      texture: gl.getUniformLocation(program, 'u_texture')
+    };
+
+    const makeTextureCanvas = (product, index) => {
+      const c = document.createElement('canvas');
+      c.width = 720;
+      c.height = 1080;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = product.accent;
+      ctx.fillRect(0, 0, c.width, c.height);
+
+      const grad = ctx.createLinearGradient(0, 0, c.width, c.height);
+      grad.addColorStop(0, 'rgba(255,255,255,.58)');
+      grad.addColorStop(.45, 'rgba(255,255,255,.08)');
+      grad.addColorStop(1, 'rgba(0,0,0,.22)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, c.width, c.height);
+
+      ctx.strokeStyle = 'rgba(20,20,20,.28)';
+      ctx.lineWidth = 2;
+      for (let x = 64; x < c.width - 64; x += 68) {
+        ctx.beginPath();
+        ctx.moveTo(x, 92);
+        ctx.lineTo(x, c.height - 92);
+        ctx.stroke();
+      }
+      for (let y = 120; y < c.height - 90; y += 86) {
+        ctx.beginPath();
+        ctx.moveTo(64, y);
+        ctx.lineTo(c.width - 64, y);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = 'rgba(255,255,255,.52)';
+      ctx.fillRect(70, 96, 280, 76);
+      ctx.fillRect(70, 224, 430, 52);
+      ctx.fillRect(70, 306, 340, 52);
+      ctx.fillRect(70, 388, 480, 52);
+
+      ctx.fillStyle = 'rgba(8,8,8,.58)';
+      ctx.fillRect(92, 520, 536, 320);
+      ctx.fillStyle = 'rgba(255,255,255,.18)';
+      ctx.fillRect(132, 568, 310, 28);
+      ctx.fillRect(132, 628, 220, 28);
+      ctx.fillRect(132, 688, 264, 28);
+
+      ctx.strokeStyle = 'rgba(255,255,255,.46)';
+      ctx.lineWidth = 10;
+      ctx.beginPath();
+      ctx.arc(520, 890, 82, Math.PI * .18, Math.PI * 1.72);
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(8,8,8,.72)';
+      ctx.font = '38px Helvetica Neue, Helvetica, sans-serif';
+      ctx.fillText(product.title, 68, 970);
+      ctx.font = '24px Helvetica Neue, Helvetica, sans-serif';
+      ctx.fillText(String(index + 1).padStart(2, '0'), 612, 970);
+
+      return c;
+    };
+
+    const createTexture = (source) => {
+      const texture = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      return texture;
+    };
+
+    const hexToRgb = (hex) => {
+      const value = hex.replace('#', '');
+      const numeric = parseInt(value.length === 3
+        ? value.split('').map((char) => char + char).join('')
+        : value, 16);
+      return [
+        ((numeric >> 16) & 255) / 255,
+        ((numeric >> 8) & 255) / 255,
+        (numeric & 255) / 255
+      ];
+    };
+
+    products.forEach((product, index) => {
+      product.source = makeTextureCanvas(product, index);
+      product.texture = createTexture(product.source);
+      product.imageUrl = product.source.toDataURL('image/png');
+      product.accentRgb = hexToRgb(product.accent);
+      product.hover = 0;
+      product.zoom = 0;
+      product.introDelay = index * 0.18;
+    });
+
+    let width = 0;
+    let height = 0;
+    let dpr = 1;
+    let activeIndex = 0;
+    let hoveredIndex = -1;
+    let mouse = { x: innerWidth * .5, y: innerHeight * .5 };
+    let smoothMouse = { x: mouse.x, y: mouse.y };
+    let prevMouse = { x: mouse.x, y: mouse.y };
+    let velocity = 0;
+    let startedAt = performance.now();
+
+    const resize = () => {
+      dpr = Math.min(devicePixelRatio || 1, 2);
+      width = innerWidth;
+      height = innerHeight;
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      canvas.style.width = width + 'px';
+      canvas.style.height = height + 'px';
+      gl.viewport(0, 0, canvas.width, canvas.height);
+    };
+
+    const easeOutCubic = (value) => 1 - Math.pow(1 - value, 3);
+    const easeInOutCubic = (value) => value < 0.5
+      ? 4 * value * value * value
+      : 1 - Math.pow(-2 * value + 2, 3) / 2;
+
+    const getIntro = (product, time) => {
+      const raw = Math.max(0, Math.min(1, (time - product.introDelay) / 2.15));
+      return easeInOutCubic(raw);
+    };
+
+    const getCurrentRect = (product, intro) => {
+      const spread = easeOutCubic(intro);
+      const start = product.start || [product.rect[0] * .22, product.rect[1] * .22];
+      return [
+        start[0] + (product.rect[0] - start[0]) * spread,
+        start[1] + (product.rect[1] - start[1]) * spread,
+        product.rect[2],
+        product.rect[3]
+      ];
+    };
+
+    const ndcToScreenRect = (product, parallax, rect = product.rect) => {
+      const [x, y, w, h] = rect;
+      const cx = x + parallax[0];
+      const cy = y + parallax[1];
+      return {
+        left: (cx - w) * .5 * width + width * .5,
+        right: (cx + w) * .5 * width + width * .5,
+        top: height * .5 - (cy + h) * .5 * height,
+        bottom: height * .5 - (cy - h) * .5 * height
+      };
+    };
+
+    const productParallax = (product) => {
+      const mx = (smoothMouse.x / width - .5) * 2;
+      const my = (smoothMouse.y / height - .5) * -2;
+      return [mx * .065 * product.depth, my * .052 * product.depth];
+    };
+
+    const updateActive = (index) => {
+      if (index === activeIndex) return;
+      activeIndex = index;
+      activeTitle.textContent = products[index].title;
+    };
+
+    const findHover = () => {
+      let nearest = activeIndex;
+      let nearestDistance = Infinity;
+      hoveredIndex = -1;
+      const time = (performance.now() - startedAt) / 1000;
+      products.forEach((product, index) => {
+        const intro = getIntro(product, time);
+        const rect = ndcToScreenRect(product, productParallax(product), getCurrentRect(product, intro));
+        const cx = (rect.left + rect.right) * .5;
+        const cy = (rect.top + rect.bottom) * .5;
+        const inside =
+          mouse.x >= rect.left && mouse.x <= rect.right &&
+          mouse.y >= rect.top && mouse.y <= rect.bottom;
+        if (inside) {
+          hoveredIndex = index;
+        }
+        const dx = mouse.x - cx;
+        const dy = mouse.y - cy;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (inside || distance < nearestDistance) {
+          nearestDistance = inside ? 0 : distance;
+          nearest = index;
+        }
+      });
+      if (nearestDistance < Math.min(width, height) * .32) {
+        updateActive(nearest);
+      }
+    };
+
+    const openProduct = (product) => {
+      modalImage.src = product.imageUrl;
+      modalImage.alt = product.title;
+      modalTitle.textContent = product.title;
+      modalDescription.textContent = product.description;
+      overlay.classList.add('open');
+      overlay.setAttribute('aria-hidden', 'false');
+    };
+
+    const handleClick = () => {
+      const time = (performance.now() - startedAt) / 1000;
+      for (const product of products) {
+        const intro = getIntro(product, time);
+        const rect = ndcToScreenRect(product, productParallax(product), getCurrentRect(product, intro));
+        const inside =
+          mouse.x >= rect.left && mouse.x <= rect.right &&
+          mouse.y >= rect.top && mouse.y <= rect.bottom;
+        if (inside) {
+          openProduct(product);
+          return;
+        }
+      }
+    };
+
+    addEventListener('resize', resize);
+    addEventListener('mousemove', (event) => {
+      mouse.x = event.clientX;
+      mouse.y = event.clientY;
+      cursor.style.left = `${mouse.x}px`;
+      cursor.style.top = `${mouse.y}px`;
+      findHover();
+    });
+    addEventListener('mouseleave', () => {
+      hoveredIndex = -1;
+    });
+    addEventListener('click', handleClick);
+    closeOverlay.addEventListener('click', (event) => {
+      event.stopPropagation();
+      overlay.classList.remove('open');
+      overlay.setAttribute('aria-hidden', 'true');
+    });
+    addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        overlay.classList.remove('open');
+        overlay.setAttribute('aria-hidden', 'true');
+      }
+    });
+
+    const render = (now) => {
+      const time = (now - startedAt) / 1000;
+      smoothMouse.x += (mouse.x - smoothMouse.x) * .08;
+      smoothMouse.y += (mouse.y - smoothMouse.y) * .08;
+      const dx = smoothMouse.x - prevMouse.x;
+      const dy = smoothMouse.y - prevMouse.y;
+      velocity += (Math.min(Math.sqrt(dx * dx + dy * dy) / 24, 1.8) - velocity) * .12;
+      prevMouse.x = smoothMouse.x;
+      prevMouse.y = smoothMouse.y;
+
+      const tx = (smoothMouse.x / width - .5) * -26;
+      const ty = (smoothMouse.y / height - .5) * -18;
+      titleWrap.style.setProperty('--tx', `${tx}px`);
+      titleWrap.style.setProperty('--ty', `${ty}px`);
+
+      gl.clearColor(0.012, 0.02, 0.016, 1);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      gl.uniform1i(uniforms.texture, 0);
+
+      products.forEach((product, index) => {
+        const parallax = productParallax(product);
+        const easedIntro = getIntro(product, time);
+        const currentRect = getCurrentRect(product, easedIntro);
+        const targetHover = index === activeIndex ? 1 : 0;
+        const targetZoom = index === hoveredIndex ? 1 : 0;
+        product.hover += (targetHover - product.hover) * .09;
+        product.zoom += (targetZoom - product.zoom) * .12;
+
+        const mouseUv = (() => {
+          const rect = ndcToScreenRect(product, parallax, currentRect);
+          return [
+            (smoothMouse.x - rect.left) / (rect.right - rect.left),
+            (smoothMouse.y - rect.top) / (rect.bottom - rect.top)
+          ];
+        })();
+
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, product.texture);
+        gl.uniform4f(uniforms.rect, currentRect[0], currentRect[1], currentRect[2], currentRect[3]);
+        gl.uniform2f(uniforms.parallax, parallax[0], parallax[1]);
+        gl.uniform1f(uniforms.scale, .18 + easedIntro * .82 + product.hover * .025 + product.zoom * .095);
+        gl.uniform3f(uniforms.accent, product.accentRgb[0], product.accentRgb[1], product.accentRgb[2]);
+        gl.uniform2f(uniforms.mouseUv, mouseUv[0], mouseUv[1]);
+        gl.uniform1f(uniforms.hover, product.zoom);
+        gl.uniform1f(uniforms.velocity, velocity);
+        gl.uniform1f(uniforms.time, time);
+        gl.uniform1f(uniforms.intro, easedIntro);
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+      });
+
+      requestAnimationFrame(render);
+    };
+
+    resize();
+    updateActive(0);
+    requestAnimationFrame(render);
+  </script>
+</body>
+</html>
