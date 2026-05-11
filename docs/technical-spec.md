@@ -71,7 +71,9 @@ status: 'coming-soon'
 
 ## 4. 产品数据结构
 
-所有作品信息集中维护在 `index.html` 的 `products` 数组中。
+所有作品内容集中维护在 `index.html` 的 `PRODUCT_CONTENT` 数组中。后续替换真实产品时，只改 `PRODUCT_CONTENT`，不要改动画布局参数。
+
+`PRODUCT_LAYOUT` 只负责 WebGL 位置、视差和主题色，除非重新设计首页构图，否则不要改。
 
 推荐完整字段如下：
 
@@ -311,12 +313,19 @@ description: '自然语言数据分析助手，让用户用提问的方式理解
 
 当前 `index.html` 已实现：
 
+- 基础 SEO 标题、描述和 Open Graph 信息。
 - WebGL 产品矩阵。
 - 产品标题切换。
 - 鼠标视差移动。
 - 图片 hover 放大。
 - 点击图片打开弹层。
 - 右下角数字计数已移除。
-- `products` 数据中已经存在 `hoverSummary` 和 `description` 两个字段。
+- `products` 数据中已经存在 `status`、`hoverSummary`、`description`、`ctaLabel`、`ctaUrl` 字段。
+- 产品内容已集中到 `PRODUCT_CONTENT`，动画布局已集中到 `PRODUCT_LAYOUT`。
+- 前 4 个占位产品当前标记为 `live`。
+- 后 2 个占位产品当前标记为 `coming-soon`。
+- `live` 产品点击后展示正式简介；仅当 `ctaUrl` 有值时展示 CTA。
+- `coming-soon` 产品点击后展示“敬请期待，即将上线。”，不展示 CTA。
+- 每个产品已经支持 `image` 字段。为空时使用当前动态生成的占位图；填写 `assets/xxx.webp` 后，WebGL 和弹层会使用该图片。
 
 当前页面没有渲染可见的 hover 文案浮层。后续如果要恢复“鼠标悬停图片展示短简介”的功能，必须按本文档约定使用 `hoverSummary`，并避免把它放成大标题下方的大段文字。
