@@ -244,19 +244,78 @@
     }
 
     .brand {
-      position: absolute;
-      font-size: clamp(13px, 1vw, 16px);
+      position: fixed;
+      z-index: 8;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      font-size: clamp(18px, 1.45vw, 24px);
       line-height: 1;
-      font-weight: 400;
+      font-weight: 500;
       color: var(--ink);
       text-transform: uppercase;
+      font-family: inherit;
+      letter-spacing: 0;
+      cursor: pointer;
+      pointer-events: auto;
     }
 
     .brand {
-      top: 7.4vh;
+      top: 6.8vh;
       left: 3.4vw;
       color: var(--green);
-      text-shadow: 0 0 18px rgba(86, 255, 139, .26);
+      text-shadow: 0 0 20px rgba(86, 255, 139, .28);
+    }
+
+    .site-nav {
+      position: fixed;
+      top: 7.1vh;
+      right: 3.4vw;
+      z-index: 8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      pointer-events: auto;
+    }
+
+    .nav-tab {
+      position: relative;
+      padding: 0 0 7px;
+      border: 0;
+      background: transparent;
+      color: rgba(232, 235, 229, .52);
+      font: inherit;
+      font-size: clamp(12px, .9vw, 14px);
+      line-height: 1;
+      letter-spacing: 0;
+      cursor: pointer;
+      transition: color .2s ease, border-color .2s ease, background .2s ease;
+    }
+
+    .nav-tab::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 1px;
+      background: currentColor;
+      opacity: 0;
+      transform: scaleX(.2);
+      transform-origin: right;
+      transition: opacity .2s ease, transform .2s ease;
+    }
+
+    .nav-tab:hover,
+    .nav-tab.is-active {
+      color: var(--green);
+    }
+
+    .nav-tab:hover::after,
+    .nav-tab.is-active::after {
+      opacity: .72;
+      transform: scaleX(1);
+      transform-origin: left;
     }
 
     .title-wrap {
@@ -319,6 +378,7 @@
       padding: 7vh 5vw;
       background: rgba(3, 5, 4, .86);
       backdrop-filter: blur(26px);
+      overflow-y: auto;
       opacity: 0;
       pointer-events: none;
       transform: scale(.985);
@@ -329,6 +389,40 @@
       opacity: 1;
       pointer-events: auto;
       transform: scale(1);
+    }
+
+    .overlay.about-open {
+      grid-template-columns: minmax(300px, 1500px);
+      justify-content: start;
+      padding-left: clamp(160px, 12vw, 260px);
+    }
+
+    .overlay.about-open .modal-image,
+    .overlay.about-open .modal-status,
+    .overlay.about-open .modal-signature {
+      display: none;
+    }
+
+    .overlay.about-open .modal-copy {
+      width: min(86vw, 1500px);
+    }
+
+    .overlay.about-open .modal-copy h2 {
+      display: none;
+    }
+
+    .overlay.about-open .modal-copy p {
+      max-width: none;
+      color: rgba(255, 255, 255, .88);
+      font-size: clamp(18px, 1.1vw, 22px);
+      line-height: 2;
+      white-space: pre;
+      word-break: keep-all;
+      overflow-wrap: normal;
+    }
+
+    .overlay.about-open .close {
+      display: none;
     }
 
     .modal-image {
@@ -372,13 +466,13 @@
       line-height: .92;
       font-weight: 200;
       text-transform: uppercase;
-      color: rgba(232, 235, 229, .94);
+      color: rgba(255, 255, 255, .94);
     }
 
     .modal-copy p {
       max-width: 610px;
       margin: 0;
-      color: rgba(232, 235, 229, .74);
+      color: rgba(255, 255, 255, .88);
       font-family: "Songti SC", "STSong", "Noto Serif SC", "Source Han Serif SC", serif;
       font-size: clamp(18px, 1.55vw, 27px);
       font-weight: 300;
@@ -437,6 +531,10 @@
       pointer-events: auto;
     }
 
+    .modal-nav.hidden {
+      display: none;
+    }
+
     .modal-switch-button {
       position: relative;
       display: block;
@@ -472,7 +570,7 @@
 
     .close {
       position: absolute;
-      top: 5vh;
+      top: 12vh;
       right: 4vw;
       width: 42px;
       height: 42px;
@@ -487,11 +585,26 @@
 
     @media (max-width: 760px) {
       .brand {
-        top: 28px;
+        top: 26px;
+        font-size: 17px;
       }
 
       .brand {
         left: 22px;
+      }
+
+      .site-nav {
+        top: 28px;
+        right: 18px;
+      }
+
+      .nav-tab {
+        padding: 0 0 6px;
+        font-size: 12px;
+      }
+
+      .overlay.about-open .modal-copy {
+        width: 100%;
       }
 
       .title-wrap {
@@ -506,6 +619,10 @@
       .overlay {
         grid-template-columns: 1fr;
         gap: 26px;
+        padding: 82px 22px 32px;
+      }
+
+      .overlay.about-open {
         padding: 82px 22px 32px;
       }
 
@@ -543,14 +660,18 @@
   </svg>
   <canvas id="stage" aria-label="Product portfolio WebGL stage"></canvas>
   <div class="product-image-layer" id="productImageLayer" aria-hidden="true"></div>
+  <button class="brand" id="homeLink" type="button">麦克斯坦</button>
 
   <div class="chrome" aria-hidden="false">
-    <div class="brand">麦克斯坦</div>
     <div class="title-wrap" id="titleWrap">
       <h1 id="activeTitle">KnowLens</h1>
     </div>
     <div class="hint">移动鼠标浏览作品。点击图片查看产品详情。</div>
   </div>
+
+  <nav class="site-nav" aria-label="主导航">
+    <button class="nav-tab" id="aboutTab" type="button" aria-pressed="false">关于我</button>
+  </nav>
 
   <div class="cursor" id="cursor"></div>
 
@@ -607,7 +728,7 @@
       {
         title: '吃什么嘞',
         status: 'live',
-        description: '一只替选择松绑的转盘。当天色落进饭点，而“吃什么”又变成一场小小的拉扯，你只需要把想吃的名字放进我的格子里：火锅、拉面、轻食、烧烤，或任何一份突然冒出来的念头。轻轻一转，犹豫被交给命运，答案带着一点随机的快乐落下。选择不必总是郑重，有时好好吃饭，就是最好的决定。',
+        description: '我是一只替选择松绑的转盘。当天色落进饭点，而“吃什么”又变成一场小小的拉扯，你只需要把想吃的名字放进我的格子里：火锅、拉面、轻食、烧烤，或任何一份突然冒出来的念头。轻轻一转，犹豫被交给命运，答案带着一点随机的快乐落下。选择不必总是郑重，有时好好吃饭，就是最好的决定。',
         signature: '@吃什么嘞 小程序',
         hoverSummary: '把吃什么交给一只轻快的转盘。',
         ctaLabel: '',
@@ -645,6 +766,20 @@
         }
       }
     ];
+
+    const ABOUT_CONTENT = {
+      title: '关于我',
+      status: 'about',
+      description: `产品经理，在狂学 AI，也在用 AI build 产品。
+目前 vibe 出来的产品包括 KnowLens、吃什么嘞、听谁的呀、奶茶咖啡打卡日记（奶咖记）。
+用户数 5 个，包括我和我的朋友；收入 0 元。
+但我还是非常兴奋。如果你也能用上我们的产品，我会非常开心。
+我也会持续分享 AI 一手体验、用 AI build in public
+如果你也想做自己的产品，想探索 AI、副业和个人变现，欢迎关注我。
+小红书 / 抖音 / 视频号：
+
+—— @麦克斯坦`
+    };
 
     const PRODUCT_LAYOUT = [
       {
@@ -695,6 +830,8 @@
     const gl = canvas.getContext('webgl', { antialias: true, alpha: true });
     const activeTitle = document.getElementById('activeTitle');
     const titleWrap = document.getElementById('titleWrap');
+    const homeLink = document.getElementById('homeLink');
+    const aboutTab = document.getElementById('aboutTab');
     const cursor = document.getElementById('cursor');
     const overlay = document.getElementById('overlay');
     const modalImage = document.getElementById('modalImage');
@@ -704,7 +841,7 @@
     const modalSignature = document.getElementById('modalSignature');
     const modalNav = document.getElementById('modalNav');
     const modalCta = document.getElementById('modalCta');
-    const closeOverlay = document.getElementById('closeOverlay');
+    const closeOverlayButton = document.getElementById('closeOverlay');
     const liquidTurbulence = document.getElementById('liquidTurbulence');
     const liquidDisplacement = document.getElementById('liquidDisplacement');
 
@@ -1084,6 +1221,7 @@
 
     const renderModalNav = () => {
       modalNav.innerHTML = '';
+      modalNav.classList.remove('hidden');
 
       const button = document.createElement('button');
       const icon = document.createElement('span');
@@ -1104,9 +1242,24 @@
       modalNav.appendChild(button);
     };
 
+    const setActiveSection = (section) => {
+      const isAbout = section === 'about';
+      aboutTab.classList.toggle('is-active', isAbout);
+      aboutTab.setAttribute('aria-pressed', String(isAbout));
+    };
+
+    const closeCurrentOverlay = () => {
+      overlay.classList.remove('open');
+      overlay.classList.remove('about-open');
+      overlay.setAttribute('aria-hidden', 'true');
+      setActiveSection('works');
+    };
+
     const openProduct = (product, productIndex = products.indexOf(product)) => {
       modalProductIndex = productIndex;
       const isComingSoon = product.status === 'coming-soon';
+      setActiveSection('works');
+      overlay.classList.remove('about-open');
       modalImage.src = product.image || product.imageUrl;
       modalImage.alt = product.title;
       modalStatus.textContent = isComingSoon ? 'Coming Soon' : 'Live Product';
@@ -1125,6 +1278,24 @@
       }
 
       renderModalNav();
+      overlay.classList.add('open');
+      overlay.setAttribute('aria-hidden', 'false');
+    };
+
+    const openAbout = () => {
+      setActiveSection('about');
+      modalImage.removeAttribute('src');
+      modalImage.alt = '';
+      modalStatus.textContent = '';
+      modalTitle.textContent = ABOUT_CONTENT.title;
+      modalDescription.textContent = ABOUT_CONTENT.description;
+      modalSignature.textContent = '';
+      modalCta.textContent = '';
+      modalCta.removeAttribute('href');
+      modalCta.classList.add('hidden');
+      modalNav.innerHTML = '';
+      modalNav.classList.add('hidden');
+      overlay.classList.add('about-open');
       overlay.classList.add('open');
       overlay.setAttribute('aria-hidden', 'false');
     };
@@ -1158,15 +1329,21 @@
       hoveredIndex = -1;
     });
     addEventListener('click', handleClick);
-    closeOverlay.addEventListener('click', (event) => {
+    homeLink.addEventListener('click', (event) => {
       event.stopPropagation();
-      overlay.classList.remove('open');
-      overlay.setAttribute('aria-hidden', 'true');
+      closeCurrentOverlay();
+    });
+    aboutTab.addEventListener('click', (event) => {
+      event.stopPropagation();
+      openAbout();
+    });
+    closeOverlayButton.addEventListener('click', (event) => {
+      event.stopPropagation();
+      closeCurrentOverlay();
     });
     addEventListener('keydown', (event) => {
       if (event.key === 'Escape') {
-        overlay.classList.remove('open');
-        overlay.setAttribute('aria-hidden', 'true');
+        closeCurrentOverlay();
       }
     });
 
