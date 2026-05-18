@@ -470,6 +470,7 @@
     }
 
     .modal-copy p {
+      display: inline-block;
       max-width: 610px;
       margin: 0;
       color: rgba(255, 255, 255, .88);
@@ -1071,6 +1072,7 @@ vibe 出来的产品包括 KnowLens、吃什么嘞、听谁的呀、奶茶咖啡
       const frame = document.createElement('div');
       frame.className = 'product-dom-frame';
       frame.addEventListener('click', (event) => {
+        if (overlay.classList.contains('open')) return;
         event.stopPropagation();
         openProduct(product);
       });
@@ -1249,9 +1251,14 @@ vibe 出来的产品包括 KnowLens、吃什么嘞、听谁的呀、奶茶咖啡
 
     const closeCurrentOverlay = () => {
       overlay.classList.remove('open');
-      overlay.classList.remove('about-open');
       overlay.setAttribute('aria-hidden', 'true');
       setActiveSection('works');
+      setTimeout(() => {
+        if (!overlay.classList.contains('open')) {
+          overlay.classList.remove('about-open');
+          modalImage.style.display = '';
+        }
+      }, 400);
     };
 
     const openProduct = (product, productIndex = products.indexOf(product)) => {
@@ -1259,6 +1266,7 @@ vibe 出来的产品包括 KnowLens、吃什么嘞、听谁的呀、奶茶咖啡
       const isComingSoon = product.status === 'coming-soon';
       setActiveSection('works');
       overlay.classList.remove('about-open');
+      modalImage.style.display = '';
       modalImage.src = product.image || product.imageUrl;
       modalImage.alt = product.title;
       modalStatus.textContent = isComingSoon ? 'Coming Soon' : 'Live Product';
@@ -1283,7 +1291,7 @@ vibe 出来的产品包括 KnowLens、吃什么嘞、听谁的呀、奶茶咖啡
 
     const openAbout = () => {
       setActiveSection('about');
-      modalImage.removeAttribute('src');
+      modalImage.style.display = 'none';
       modalImage.alt = '';
       modalStatus.textContent = '';
       modalTitle.textContent = ABOUT_CONTENT.title;
@@ -1339,6 +1347,18 @@ vibe 出来的产品包括 KnowLens、吃什么嘞、听谁的呀、奶茶咖啡
     closeOverlayButton.addEventListener('click', (event) => {
       event.stopPropagation();
       closeCurrentOverlay();
+    });
+    overlay.addEventListener('click', (event) => {
+      event.stopPropagation();
+      if (overlay.classList.contains('about-open')) {
+        if (!modalDescription.contains(event.target)) {
+          closeCurrentOverlay();
+        }
+        return;
+      }
+      if (event.target === overlay) {
+        closeCurrentOverlay();
+      }
     });
     addEventListener('keydown', (event) => {
       if (event.key === 'Escape') {
